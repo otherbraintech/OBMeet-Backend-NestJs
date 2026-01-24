@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  username  String    @unique
+  password  String
+  meetings  Meeting[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model MediaFile {
+  id       String  @id @default(uuid())
+  url      String
+  filename String
+  mimeType String?
+  size     Int?
+
+  // Relations
+  meeting     Meeting?     @relation("MeetingAudio")
+  participant Participant? @relation("ParticipantVoice")
+
+  createdAt DateTime @default(now())
+}
+
+model Participant {
+  id   String  @id @default(uuid())
+  name String
+  role String?
+
+  voiceSampleId String?    @unique
+  voiceSample   MediaFile? @relation("ParticipantVoice", fields: [voiceSampleId], references: [id])
+
+  meetingId String
+  meeting   Meeting @relation(fields: [meetingId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Meeting {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  date        DateTime @default(now())
+
+  // Relation to its main audio
+  audioFileId String?    @unique
+  audioFile   MediaFile? @relation("MeetingAudio", fields: [audioFileId], references: [id])
+
+  // AI Results
+  aiAnalysis Json?
+  transcript Json?
+  metrics    Json?
+
+  participants Participant[]
+
+  durationSeconds Int?
+  status          String @default("PENDING")
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
