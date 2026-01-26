@@ -21,14 +21,17 @@ let MeetingsService = class MeetingsService {
         return this.prisma.meeting.create({
             data: {
                 ...data,
-                ownerId: userId,
+                user_id: userId,
                 status: 'PENDING',
             },
         });
     }
     async findAll(userId) {
         return this.prisma.meeting.findMany({
-            where: { ownerId: userId },
+            where: {
+                user_id: userId,
+                NOT: { status: 'DELETED' }
+            },
             include: {
                 audioFile: true,
                 participants: {
@@ -40,7 +43,11 @@ let MeetingsService = class MeetingsService {
     }
     async findOne(id, userId) {
         return this.prisma.meeting.findFirst({
-            where: { id, ownerId: userId },
+            where: {
+                id,
+                user_id: userId,
+                NOT: { status: 'DELETED' }
+            },
             include: {
                 audioFile: true,
                 participants: {
@@ -49,11 +56,17 @@ let MeetingsService = class MeetingsService {
             },
         });
     }
+    async softDelete(id, userId) {
+        return this.prisma.meeting.update({
+            where: { id },
+            data: { status: 'DELETED' },
+        });
+    }
     async update(id, userId, data) {
-        if (data.audioUrl) {
+        if (data.audioUrl && data.audioUrl.startsWith('http')) {
             const { audioUrl, durationSeconds, ...rest } = data;
             return this.prisma.meeting.update({
-                where: { id, ownerId: userId },
+                where: { id },
                 data: {
                     ...rest,
                     durationSeconds,
@@ -66,24 +79,31 @@ let MeetingsService = class MeetingsService {
                 },
             });
         }
+        const { audioUrl, ...rest } = data;
         return this.prisma.meeting.update({
-            where: { id, ownerId: userId },
-            data,
+            where: { id },
+            data: rest,
         });
     }
     async addParticipant(meetingId, data) {
+        const createData = {
+            name: data.name,
+            role: data.role,
+            meeting: { connect: { id: meetingId } },
+        };
+        if (data.id) {
+            createData.id = data.id;
+        }
+        if (data.voiceSampleUrl && data.voiceSampleUrl.startsWith('http')) {
+            createData.voiceSample = {
+                create: {
+                    url: data.voiceSampleUrl,
+                    filename: data.voiceSampleUrl.split('/').pop() || 'voice.mp3',
+                }
+            };
+        }
         return this.prisma.participant.create({
-            data: {
-                name: data.name,
-                role: data.role,
-                meetingId: meetingId,
-                voiceSample: data.voiceSampleUrl ? {
-                    create: {
-                        url: data.voiceSampleUrl,
-                        filename: data.voiceSampleUrl.split('/').pop() || 'voice.mp3',
-                    }
-                } : undefined,
-            },
+            data: createData,
         });
     }
     async updateAiResults(id, results) {

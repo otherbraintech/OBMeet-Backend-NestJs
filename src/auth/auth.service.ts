@@ -35,12 +35,12 @@ export class AuthService {
   async login(username: string, pass: string) {
     const user = await this.usersService.findOne(username);
     if (!user) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException('El usuario no existe');
     }
 
     const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) {
-      throw new UnauthorizedException('Credenciales inválidas');
+      throw new UnauthorizedException('Contraseña incorrecta');
     }
 
     const payload = { username: user.username, sub: user.id };

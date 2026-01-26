@@ -33,6 +33,9 @@ let MeetingsController = class MeetingsController {
     update(req, id, body) {
         return this.meetingsService.update(id, req.user.userId, body);
     }
+    remove(req, id) {
+        return this.meetingsService.softDelete(id, req.user.userId);
+    }
     async addParticipant(id, body) {
         return this.meetingsService.addParticipant(id, body);
     }
@@ -83,6 +86,15 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, Object]),
     __metadata("design:returntype", void 0)
 ], MeetingsController.prototype, "update", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)(':id/delete'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", void 0)
+], MeetingsController.prototype, "remove", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)(':id/participants'),

@@ -9,7 +9,7 @@ export class MeetingsService {
     return this.prisma.meeting.create({
       data: {
         ...data,
-        ownerId: userId,
+        user_id: userId,
         status: 'PENDING',
       },
     });
@@ -17,7 +17,10 @@ export class MeetingsService {
 
   async findAll(userId: string) {
     return this.prisma.meeting.findMany({
-      where: { ownerId: userId },
+      where: { 
+        user_id: userId,
+        NOT: { status: 'DELETED' }
+      },
       include: {
         audioFile: true,
         participants: {
@@ -30,7 +33,11 @@ export class MeetingsService {
 
   async findOne(id: string, userId: string) {
     return this.prisma.meeting.findFirst({
-      where: { id, ownerId: userId },
+      where: { 
+        id, 
+        user_id: userId,
+        NOT: { status: 'DELETED' }
+      },
       include: {
         audioFile: true,
         participants: {
@@ -40,12 +47,19 @@ export class MeetingsService {
     });
   }
 
+  async softDelete(id: string, userId: string) {
+    return this.prisma.meeting.update({
+      where: { id },
+      data: { status: 'DELETED' },
+    });
+  }
+
   async update(id: string, userId: string, data: any) {
-    // Si viene audioUrl, creamos el MediaFile y lo vinculamos
-    if (data.audioUrl) {
+    // Si viene audioUrl y es una URL real, creamos el MediaFile y lo vinculamos
+    if (data.audioUrl && data.audioUrl.startsWith('http')) {
       const { audioUrl, durationSeconds, ...rest } = data;
       return this.prisma.meeting.update({
-        where: { id, ownerId: userId },
+        where: { id },
         data: {
           ...rest,
           durationSeconds,
@@ -59,26 +73,38 @@ export class MeetingsService {
       });
     }
 
+    // Si es una URL de marcador (como local_storage), solo actualizamos los demás datos
+    const { audioUrl, ...rest } = data;
     return this.prisma.meeting.update({
-      where: { id, ownerId: userId },
-      data,
+      where: { id },
+      data: rest,
     });
   }
 
   // Nuevo método para agregar participantes con su audio
-  async addParticipant(meetingId: string, data: { name: string; role?: string; voiceSampleUrl?: string }) {
+  async addParticipant(meetingId: string, data: { id?: string; name: string; role?: string; voiceSampleUrl?: string }) {
+    const createData: any = {
+      name: data.name,
+      role: data.role,
+      meeting: { connect: { id: meetingId } },
+    };
+
+    // Solo asignar ID si viene del frontend y no es vacío
+    if (data.id) {
+      createData.id = data.id;
+    }
+
+    if (data.voiceSampleUrl && data.voiceSampleUrl.startsWith('http')) {
+      createData.voiceSample = {
+        create: {
+          url: data.voiceSampleUrl,
+          filename: data.voiceSampleUrl.split('/').pop() || 'voice.mp3',
+        }
+      };
+    }
+
     return this.prisma.participant.create({
-      data: {
-        name: data.name,
-        role: data.role,
-        meetingId: meetingId,
-        voiceSample: data.voiceSampleUrl ? {
-          create: {
-            url: data.voiceSampleUrl,
-            filename: data.voiceSampleUrl.split('/').pop() || 'voice.mp3',
-          }
-        } : undefined,
-      },
+      data: createData,
     });
   }
 

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,62 +10,72 @@ model User {
   id        String    @id @default(uuid())
   username  String    @unique
   password  String
-  meetings  Meeting[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  meetings  Meeting[]
 }
 
 model MediaFile {
-  id       String  @id @default(uuid())
-  url      String
-  filename String
-  mimeType String?
-  size     Int?
-
-  // Relations
+  url         String
+  filename    String
+  mimeType    String?
+  size        Int?
+  createdAt   DateTime     @default(now())
+  id          Int          @id @default(autoincrement())
   meeting     Meeting?     @relation("MeetingAudio")
   participant Participant? @relation("ParticipantVoice")
-
-  createdAt DateTime @default(now())
 }
 
 model Participant {
-  id   String  @id @default(uuid())
-  name String
-  role String?
-
-  voiceSampleId String?    @unique
+  id            String     @id @default(uuid())
+  name          String
+  role          String?
+  meetingId     String
+  createdAt     DateTime   @default(now())
+  voiceSampleId Int?       @unique
+  meeting       Meeting    @relation(fields: [meetingId], references: [id])
   voiceSample   MediaFile? @relation("ParticipantVoice", fields: [voiceSampleId], references: [id])
-
-  meetingId String
-  meeting   Meeting @relation(fields: [meetingId], references: [id])
-
-  createdAt DateTime @default(now())
 }
 
 model Meeting {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  date        DateTime @default(now())
-
-  // Relation to its main audio
-  audioFileId String?    @unique
-  audioFile   MediaFile? @relation("MeetingAudio", fields: [audioFileId], references: [id])
-
-  // AI Results
-  aiAnalysis Json?
-  transcript Json?
-  metrics    Json?
-
-  participants Participant[]
-
+  id              String        @id @default(uuid())
+  title           String
+  description     String?
+  date            DateTime      @default(now())
+  aiAnalysis      Json?
+  transcript      Json?
+  metrics         Json?
   durationSeconds Int?
-  status          String @default("PENDING")
+  status          String        @default("PENDING")
+  user_id         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  audioFileId     Int?          @unique
+  audioFile       MediaFile?    @relation("MeetingAudio", fields: [audioFileId], references: [id])
+  user            User          @relation(fields: [user_id], references: [id])
+  participants    Participant[]
+}
 
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id])
+model MediaFileLog {
+  id           BigInt   @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at")
+  level        String   @db.VarChar(16)
+  requestId    String?  @map("request_id") @db.VarChar(64)
+  method       String?  @db.VarChar(8)
+  path         String?
+  statusCode   Int?     @map("status_code")
+  remoteIp     String?  @map("remote_ip") @db.Inet
+  userAgent    String?  @map("user_agent")
+  mimeType     String?  @map("mime_type")
+  filename     String?
+  sizeBytes    BigInt?  @map("size_bytes")
+  errorCode    String?  @map("error_code")
+  errorMessage String?  @map("error_message")
+  stackSnippet String?  @map("stack_snippet")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([createdAt], map: "idx_ob_mediafie_logs_created_at")
+  @@index([level], map: "idx_ob_mediafie_logs_level")
+  @@index([statusCode], map: "idx_ob_mediafie_logs_status_code")
+  @@index([requestId], map: "idx_ob_mediafie_logs_request_id")
+  @@map("ob_mediafie_logs")
 }

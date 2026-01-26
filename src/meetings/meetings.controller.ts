@@ -31,6 +31,12 @@ export class MeetingsController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post(':id/delete') // Usamos POST para mayor compatibilidad o DELETE directamente
+  remove(@Request() req, @Param('id') id: string) {
+    return this.meetingsService.softDelete(id, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':id/participants')
   async addParticipant(@Param('id') id: string, @Body() body: { name: string; role?: string; voiceSampleUrl?: string }) {
     return this.meetingsService.addParticipant(id, body);

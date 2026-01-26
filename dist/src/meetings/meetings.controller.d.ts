@@ -17,12 +17,12 @@ export declare class MeetingsController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        audioFileId: string | null;
-        ownerId: string;
+        user_id: string;
+        audioFileId: number | null;
     }>;
     findAll(req: any): Promise<({
         audioFile: {
-            id: string;
+            id: number;
             createdAt: Date;
             url: string;
             filename: string;
@@ -31,7 +31,7 @@ export declare class MeetingsController {
         } | null;
         participants: ({
             voiceSample: {
-                id: string;
+                id: number;
                 createdAt: Date;
                 url: string;
                 filename: string;
@@ -43,8 +43,8 @@ export declare class MeetingsController {
             createdAt: Date;
             name: string;
             role: string | null;
-            voiceSampleId: string | null;
             meetingId: string;
+            voiceSampleId: number | null;
         })[];
     } & {
         id: string;
@@ -58,12 +58,12 @@ export declare class MeetingsController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        audioFileId: string | null;
-        ownerId: string;
+        user_id: string;
+        audioFileId: number | null;
     })[]>;
     findOne(req: any, id: string): Promise<({
         audioFile: {
-            id: string;
+            id: number;
             createdAt: Date;
             url: string;
             filename: string;
@@ -72,7 +72,7 @@ export declare class MeetingsController {
         } | null;
         participants: ({
             voiceSample: {
-                id: string;
+                id: number;
                 createdAt: Date;
                 url: string;
                 filename: string;
@@ -84,8 +84,8 @@ export declare class MeetingsController {
             createdAt: Date;
             name: string;
             role: string | null;
-            voiceSampleId: string | null;
             meetingId: string;
+            voiceSampleId: number | null;
         })[];
     } & {
         id: string;
@@ -99,8 +99,8 @@ export declare class MeetingsController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        audioFileId: string | null;
-        ownerId: string;
+        user_id: string;
+        audioFileId: number | null;
     }) | null>;
     update(req: any, id: string, body: any): Promise<{
         id: string;
@@ -114,8 +114,23 @@ export declare class MeetingsController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        audioFileId: string | null;
-        ownerId: string;
+        user_id: string;
+        audioFileId: number | null;
+    }>;
+    remove(req: any, id: string): Promise<{
+        id: string;
+        title: string;
+        description: string | null;
+        date: Date;
+        aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        transcript: import("@prisma/client/runtime/client").JsonValue | null;
+        metrics: import("@prisma/client/runtime/client").JsonValue | null;
+        durationSeconds: number | null;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        user_id: string;
+        audioFileId: number | null;
     }>;
     addParticipant(id: string, body: {
         name: string;
@@ -126,8 +141,8 @@ export declare class MeetingsController {
         createdAt: Date;
         name: string;
         role: string | null;
-        voiceSampleId: string | null;
         meetingId: string;
+        voiceSampleId: number | null;
     }>;
     webhookResult(id: string, body: any): Promise<{
         id: string;
@@ -141,7 +156,7 @@ export declare class MeetingsController {
         status: string;
         createdAt: Date;
         updatedAt: Date;
-        audioFileId: string | null;
-        ownerId: string;
+        user_id: string;
+        audioFileId: number | null;
     }>;
 }

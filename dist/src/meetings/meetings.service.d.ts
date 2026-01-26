@@ -7,8 +7,6 @@ export declare class MeetingsService {
         description?: string;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         title: string;
         description: string | null;
         date: Date;
@@ -17,12 +15,14 @@ export declare class MeetingsService {
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
         durationSeconds: number | null;
         status: string;
-        audioFileId: string | null;
-        ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        user_id: string;
+        audioFileId: number | null;
     }>;
     findAll(userId: string): Promise<({
         audioFile: {
-            id: string;
+            id: number;
             createdAt: Date;
             url: string;
             filename: string;
@@ -31,7 +31,7 @@ export declare class MeetingsService {
         } | null;
         participants: ({
             voiceSample: {
-                id: string;
+                id: number;
                 createdAt: Date;
                 url: string;
                 filename: string;
@@ -39,17 +39,15 @@ export declare class MeetingsService {
                 size: number | null;
             } | null;
         } & {
-            name: string;
             id: string;
             createdAt: Date;
+            name: string;
             role: string | null;
-            voiceSampleId: string | null;
             meetingId: string;
+            voiceSampleId: number | null;
         })[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         title: string;
         description: string | null;
         date: Date;
@@ -58,12 +56,14 @@ export declare class MeetingsService {
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
         durationSeconds: number | null;
         status: string;
-        audioFileId: string | null;
-        ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        user_id: string;
+        audioFileId: number | null;
     })[]>;
     findOne(id: string, userId: string): Promise<({
         audioFile: {
-            id: string;
+            id: number;
             createdAt: Date;
             url: string;
             filename: string;
@@ -72,7 +72,7 @@ export declare class MeetingsService {
         } | null;
         participants: ({
             voiceSample: {
-                id: string;
+                id: number;
                 createdAt: Date;
                 url: string;
                 filename: string;
@@ -80,17 +80,15 @@ export declare class MeetingsService {
                 size: number | null;
             } | null;
         } & {
-            name: string;
             id: string;
             createdAt: Date;
+            name: string;
             role: string | null;
-            voiceSampleId: string | null;
             meetingId: string;
+            voiceSampleId: number | null;
         })[];
     } & {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         title: string;
         description: string | null;
         date: Date;
@@ -99,13 +97,28 @@ export declare class MeetingsService {
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
         durationSeconds: number | null;
         status: string;
-        audioFileId: string | null;
-        ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        user_id: string;
+        audioFileId: number | null;
     }) | null>;
+    softDelete(id: string, userId: string): Promise<{
+        id: string;
+        title: string;
+        description: string | null;
+        date: Date;
+        aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        transcript: import("@prisma/client/runtime/client").JsonValue | null;
+        metrics: import("@prisma/client/runtime/client").JsonValue | null;
+        durationSeconds: number | null;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+        user_id: string;
+        audioFileId: number | null;
+    }>;
     update(id: string, userId: string, data: any): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         title: string;
         description: string | null;
         date: Date;
@@ -114,20 +127,23 @@ export declare class MeetingsService {
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
         durationSeconds: number | null;
         status: string;
-        audioFileId: string | null;
-        ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        user_id: string;
+        audioFileId: number | null;
     }>;
     addParticipant(meetingId: string, data: {
+        id?: string;
         name: string;
         role?: string;
         voiceSampleUrl?: string;
     }): Promise<{
-        name: string;
         id: string;
         createdAt: Date;
+        name: string;
         role: string | null;
-        voiceSampleId: string | null;
         meetingId: string;
+        voiceSampleId: number | null;
     }>;
     updateAiResults(id: string, results: {
         aiAnalysis: any;
@@ -136,8 +152,6 @@ export declare class MeetingsService {
         durationSeconds: number;
     }): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         title: string;
         description: string | null;
         date: Date;
@@ -146,7 +160,9 @@ export declare class MeetingsService {
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
         durationSeconds: number | null;
         status: string;
-        audioFileId: string | null;
-        ownerId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        user_id: string;
+        audioFileId: number | null;
     }>;
 }
