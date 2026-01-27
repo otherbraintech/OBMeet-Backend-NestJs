@@ -7,12 +7,13 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  username  String    @unique
-  password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  meetings  Meeting[]
+  id           String        @id @default(uuid())
+  username     String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  meetings     Meeting[]
+  participants Participant[] // Agenda de contactos del usuario
 }
 
 model MediaFile {
@@ -27,33 +28,46 @@ model MediaFile {
 }
 
 model Participant {
-  id            String     @id @default(uuid())
+  id            String               @id @default(uuid())
   name          String
-  role          String?
+  userId        String               @map("user_id")
+  createdAt     DateTime             @default(now())
+  voiceSampleId Int?                 @unique
+  user          User                 @relation(fields: [userId], references: [id])
+  voiceSample   MediaFile?           @relation("ParticipantVoice", fields: [voiceSampleId], references: [id])
+  meetings      MeetingParticipant[]
+
+  @@index([userId])
+}
+
+model MeetingParticipant {
   meetingId     String
-  createdAt     DateTime   @default(now())
-  voiceSampleId Int?       @unique
-  meeting       Meeting    @relation(fields: [meetingId], references: [id])
-  voiceSample   MediaFile? @relation("ParticipantVoice", fields: [voiceSampleId], references: [id])
+  participantId String
+  createdAt     DateTime @default(now())
+
+  meeting     Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@id([meetingId, participantId])
 }
 
 model Meeting {
-  id              String        @id @default(uuid())
+  id              String               @id @default(uuid())
   title           String
   description     String?
-  date            DateTime      @default(now())
+  date            DateTime             @default(now())
   aiAnalysis      Json?
   transcript      Json?
   metrics         Json?
   durationSeconds Int?
-  status          String        @default("PENDING")
+  status          String               @default("PENDING")
   user_id         String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  audioFileId     Int?          @unique
-  audioFile       MediaFile?    @relation("MeetingAudio", fields: [audioFileId], references: [id])
-  user            User          @relation(fields: [user_id], references: [id])
-  participants    Participant[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  audioFileId     Int?                 @unique
+  audioFile       MediaFile?           @relation("MeetingAudio", fields: [audioFileId], references: [id])
+  user            User                 @relation(fields: [user_id], references: [id])
+  participants    MeetingParticipant[]
 }
 
 model MediaFileLog {

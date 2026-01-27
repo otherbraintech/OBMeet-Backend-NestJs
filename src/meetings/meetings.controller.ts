@@ -18,6 +18,15 @@ export class MeetingsController {
     return this.meetingsService.findAll(req.user.userId);
   }
 
+  /**
+   * Obtiene todos los participantes registrados del usuario logueado
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('participants/all')
+  findAllParticipants(@Request() req) {
+    return this.meetingsService.getMyParticipants(req.user.userId);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Request() req, @Param('id') id: string) {
@@ -31,24 +40,37 @@ export class MeetingsController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post(':id/delete') // Usamos POST para mayor compatibilidad o DELETE directamente
+  @Post(':id/delete')
   remove(@Request() req, @Param('id') id: string) {
     return this.meetingsService.softDelete(id, req.user.userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/participants')
-  async addParticipant(@Param('id') id: string, @Body() body: { name: string; role?: string; voiceSampleUrl?: string }) {
-    return this.meetingsService.addParticipant(id, body);
+  async addParticipant(
+    @Request() req,
+    @Param('id') id: string, 
+    @Body() body: { participantId?: string; name?: string; voiceSampleUrl?: string }
+  ) {
+    return this.meetingsService.addParticipant(id, req.user.userId, body);
   }
 
-  // Endopoint para el Webhook (Sin Auth JWT o con una Key secreta)
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/participants/:participantId/delete')
+  async removeParticipant(
+    @Param('id') id: string,
+    @Param('participantId') participantId: string
+  ) {
+    return this.meetingsService.removeParticipant(id, participantId);
+  }
+
+  // Endpoint para el Webhook
   @Post('webhook-result/:id')
   async webhookResult(@Param('id') id: string, @Body() body: any) {
     console.log(`Recibiendo resultados para reunión ${id}`);
     return this.meetingsService.updateAiResults(id, {
       aiAnalysis: body.aiAnalysis,
-      metrics: body.participants, // Guardamos las métricas de participación aquí
+      metrics: body.participants,
       transcript: body.transcript,
       durationSeconds: body.durationSeconds,
     });

@@ -24,7 +24,11 @@ export class MeetingsService {
       include: {
         audioFile: true,
         participants: {
-          include: { voiceSample: true }
+          include: { 
+            participant: {
+              include: { voiceSample: true }
+            }
+          }
         }
       },
       orderBy: { createdAt: 'desc' },
@@ -41,7 +45,11 @@ export class MeetingsService {
       include: {
         audioFile: true,
         participants: {
-          include: { voiceSample: true }
+          include: { 
+            participant: {
+              include: { voiceSample: true }
+            }
+          }
         }
       },
     });
@@ -49,7 +57,7 @@ export class MeetingsService {
 
   async softDelete(id: string, userId: string) {
     return this.prisma.meeting.update({
-      where: { id },
+      where: { id, user_id: userId },
       data: { status: 'DELETED' },
     });
   }
@@ -59,7 +67,7 @@ export class MeetingsService {
     if (data.audioUrl && data.audioUrl.startsWith('http')) {
       const { audioUrl, durationSeconds, ...rest } = data;
       return this.prisma.meeting.update({
-        where: { id },
+        where: { id, user_id: userId },
         data: {
           ...rest,
           durationSeconds,
@@ -76,35 +84,85 @@ export class MeetingsService {
     // Si es una URL de marcador (como local_storage), solo actualizamos los demás datos
     const { audioUrl, ...rest } = data;
     return this.prisma.meeting.update({
-      where: { id },
+      where: { id, user_id: userId },
       data: rest,
     });
   }
 
-  // Nuevo método para agregar participantes con su audio
-  async addParticipant(meetingId: string, data: { id?: string; name: string; role?: string; voiceSampleUrl?: string }) {
-    const createData: any = {
-      name: data.name,
-      role: data.role,
-      meeting: { connect: { id: meetingId } },
-    };
+  /**
+   * Obtiene todos los participantes registrados por el usuario
+   */
+  async getMyParticipants(userId: string) {
+    return (this.prisma as any).participant.findMany({
+      where: { userId: userId },
+      include: { voiceSample: true },
+      orderBy: { name: 'asc' }
+    });
+  }
 
-    // Solo asignar ID si viene del frontend y no es vacío
-    if (data.id) {
-      createData.id = data.id;
-    }
+  /**
+   * Agrega un participante a una reunión.
+   */
+  async addParticipant(meetingId: string, userId: string, data: { participantId?: string; name?: string; voiceSampleUrl?: string }) {
+    let participantId = data.participantId;
 
-    if (data.voiceSampleUrl && data.voiceSampleUrl.startsWith('http')) {
-      createData.voiceSample = {
-        create: {
-          url: data.voiceSampleUrl,
-          filename: data.voiceSampleUrl.split('/').pop() || 'voice.mp3',
+    // Si no tenemos ID, creamos el participante nuevo
+    if (!participantId) {
+      if (!data.name) throw new Error('Nombre requerido para nuevo participante');
+
+      let voiceSample;
+      if (data.voiceSampleUrl) {
+        voiceSample = {
+          create: {
+            url: data.voiceSampleUrl,
+            filename: data.voiceSampleUrl.split('/').pop() || 'voice.mp3',
+          }
+        };
+      }
+
+      const newParticipant = await (this.prisma as any).participant.create({
+        data: {
+          name: data.name,
+          user: { connect: { id: userId } },
+          voiceSample: voiceSample
         }
-      };
+      });
+      participantId = newParticipant.id;
     }
 
-    return this.prisma.participant.create({
-      data: createData,
+    // Vinculamos a la reunión (tabla intermedia)
+    // Usamos 'as any' para evitar errores de tipos si el cliente no se ha actualizado en el IDE
+    return (this.prisma as any).meetingParticipant.upsert({
+      where: {
+        meetingId_participantId: {
+          meetingId,
+          participantId
+        }
+      },
+      update: {}, 
+      create: {
+        meetingId,
+        participantId
+      },
+      include: {
+        participant: {
+          include: { voiceSample: true }
+        }
+      }
+    });
+  }
+
+  /**
+   * Elimina un participante de una reunión
+   */
+  async removeParticipant(meetingId: string, participantId: string) {
+    return (this.prisma as any).meetingParticipant.delete({
+      where: {
+        meetingId_participantId: {
+          meetingId,
+          participantId
+        }
+      }
     });
   }
 
