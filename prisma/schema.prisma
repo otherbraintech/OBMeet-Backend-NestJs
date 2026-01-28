@@ -27,6 +27,25 @@ model MediaFile {
   participant Participant? @relation("ParticipantVoice")
 }
 
+model ObMediaFile {
+  id           BigInt   @id @default(autoincrement())
+  createdAt    DateTime @default(now()) @map("created_at")
+  originalName String   @map("original_name")
+  storedName   String   @map("stored_name")
+  subfolder    String   @db.VarChar(16)
+  mimeType     String   @map("mime_type")
+  sizeBytes    BigInt   @map("size_bytes")
+  extension    String   @default("") @db.VarChar(16)
+  relativePath String   @default("") @map("relative_path")
+  diskPath     String   @default("") @map("disk_path")
+  publicUrl    String   @map("public_url")
+  requestId    String?  @map("request_id") @db.VarChar(64)
+  remoteIp     String?  @map("remote_ip") @db.Inet
+  userAgent    String?  @map("user_agent")
+
+  @@map("ob_mediafiles")
+}
+
 model Participant {
   id            String               @id @default(uuid())
   name          String
@@ -52,22 +71,44 @@ model MeetingParticipant {
 }
 
 model Meeting {
-  id              String               @id @default(uuid())
-  title           String
-  description     String?
-  date            DateTime             @default(now())
-  aiAnalysis      Json?
-  transcript      Json?
-  metrics         Json?
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  date            DateTime @default(now())
   durationSeconds Int?
-  status          String               @default("PENDING")
-  user_id         String
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  audioFileId     Int?                 @unique
-  audioFile       MediaFile?           @relation("MeetingAudio", fields: [audioFileId], references: [id])
-  user            User                 @relation(fields: [user_id], references: [id])
-  participants    MeetingParticipant[]
+
+  /**
+   * AI OUTPUTS
+   */
+  aiAnalysis             Json? // JSON completo devuelto por el LLM (fuente de verdad)
+  transcript             Json? // { language, segments[] }
+  metrics                Json? // engagement, clarity, participationBalance
+  participantsAnalysis   Json? // speaking time, dominance, inferred role
+  actionItems            Json? // tareas accionables
+  decisions              Json? // explicit / implicit decisions
+  speakerInsights        Json? // estilos de comunicación, dominance
+  conversationDynamics   Json? // interrupciones, flow, topic shifts
+  nextMeetingPreparation Json? // agenda sugerida, pendientes
+
+  /**
+   * SYSTEM
+   */
+  status    String   @default("PENDING")
+  user_id   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /**
+   * RELATIONS
+   */
+  audioFileId  Int?                 @unique
+  audioFile    MediaFile?           @relation("MeetingAudio", fields: [audioFileId], references: [id])
+  user         User                 @relation(fields: [user_id], references: [id])
+  participants MeetingParticipant[]
+
+  @@index([user_id])
+  @@index([status])
 }
 
 model MediaFileLog {
