@@ -10,96 +10,125 @@ export declare class MeetingsController {
         title: string;
         description: string | null;
         date: Date;
+        durationSeconds: number | null;
         aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
         transcript: import("@prisma/client/runtime/client").JsonValue | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
-        durationSeconds: number | null;
+        participantsAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        actionItems: import("@prisma/client/runtime/client").JsonValue | null;
+        decisions: import("@prisma/client/runtime/client").JsonValue | null;
+        speakerInsights: import("@prisma/client/runtime/client").JsonValue | null;
+        conversationDynamics: import("@prisma/client/runtime/client").JsonValue | null;
+        nextMeetingPreparation: import("@prisma/client/runtime/client").JsonValue | null;
         status: string;
+        user_id: string;
         createdAt: Date;
         updatedAt: Date;
-        user_id: string;
         audioFileId: number | null;
     }>;
     findAll(req: any): Promise<({
         audioFile: {
+            url: string;
             id: number;
             createdAt: Date;
-            url: string;
             filename: string;
             mimeType: string | null;
             size: number | null;
         } | null;
         participants: ({
-            voiceSample: {
-                id: number;
+            participant: {
+                voiceSample: {
+                    url: string;
+                    id: number;
+                    createdAt: Date;
+                    filename: string;
+                    mimeType: string | null;
+                    size: number | null;
+                } | null;
+            } & {
+                id: string;
                 createdAt: Date;
-                url: string;
-                filename: string;
-                mimeType: string | null;
-                size: number | null;
-            } | null;
+                name: string;
+                voiceSampleId: number | null;
+                userId: string;
+            };
         } & {
-            id: string;
             createdAt: Date;
-            name: string;
-            role: string | null;
             meetingId: string;
-            voiceSampleId: number | null;
+            participantId: string;
         })[];
     } & {
         id: string;
         title: string;
         description: string | null;
         date: Date;
+        durationSeconds: number | null;
         aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
         transcript: import("@prisma/client/runtime/client").JsonValue | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
-        durationSeconds: number | null;
+        participantsAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        actionItems: import("@prisma/client/runtime/client").JsonValue | null;
+        decisions: import("@prisma/client/runtime/client").JsonValue | null;
+        speakerInsights: import("@prisma/client/runtime/client").JsonValue | null;
+        conversationDynamics: import("@prisma/client/runtime/client").JsonValue | null;
+        nextMeetingPreparation: import("@prisma/client/runtime/client").JsonValue | null;
         status: string;
+        user_id: string;
         createdAt: Date;
         updatedAt: Date;
-        user_id: string;
         audioFileId: number | null;
     })[]>;
+    findAllParticipants(req: any): Promise<any>;
     findOne(req: any, id: string): Promise<({
         audioFile: {
+            url: string;
             id: number;
             createdAt: Date;
-            url: string;
             filename: string;
             mimeType: string | null;
             size: number | null;
         } | null;
         participants: ({
-            voiceSample: {
-                id: number;
+            participant: {
+                voiceSample: {
+                    url: string;
+                    id: number;
+                    createdAt: Date;
+                    filename: string;
+                    mimeType: string | null;
+                    size: number | null;
+                } | null;
+            } & {
+                id: string;
                 createdAt: Date;
-                url: string;
-                filename: string;
-                mimeType: string | null;
-                size: number | null;
-            } | null;
+                name: string;
+                voiceSampleId: number | null;
+                userId: string;
+            };
         } & {
-            id: string;
             createdAt: Date;
-            name: string;
-            role: string | null;
             meetingId: string;
-            voiceSampleId: number | null;
+            participantId: string;
         })[];
     } & {
         id: string;
         title: string;
         description: string | null;
         date: Date;
+        durationSeconds: number | null;
         aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
         transcript: import("@prisma/client/runtime/client").JsonValue | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
-        durationSeconds: number | null;
+        participantsAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        actionItems: import("@prisma/client/runtime/client").JsonValue | null;
+        decisions: import("@prisma/client/runtime/client").JsonValue | null;
+        speakerInsights: import("@prisma/client/runtime/client").JsonValue | null;
+        conversationDynamics: import("@prisma/client/runtime/client").JsonValue | null;
+        nextMeetingPreparation: import("@prisma/client/runtime/client").JsonValue | null;
         status: string;
+        user_id: string;
         createdAt: Date;
         updatedAt: Date;
-        user_id: string;
         audioFileId: number | null;
     }) | null>;
     update(req: any, id: string, body: any): Promise<{
@@ -107,14 +136,20 @@ export declare class MeetingsController {
         title: string;
         description: string | null;
         date: Date;
+        durationSeconds: number | null;
         aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
         transcript: import("@prisma/client/runtime/client").JsonValue | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
-        durationSeconds: number | null;
+        participantsAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        actionItems: import("@prisma/client/runtime/client").JsonValue | null;
+        decisions: import("@prisma/client/runtime/client").JsonValue | null;
+        speakerInsights: import("@prisma/client/runtime/client").JsonValue | null;
+        conversationDynamics: import("@prisma/client/runtime/client").JsonValue | null;
+        nextMeetingPreparation: import("@prisma/client/runtime/client").JsonValue | null;
         status: string;
+        user_id: string;
         createdAt: Date;
         updatedAt: Date;
-        user_id: string;
         audioFileId: number | null;
     }>;
     remove(req: any, id: string): Promise<{
@@ -122,41 +157,48 @@ export declare class MeetingsController {
         title: string;
         description: string | null;
         date: Date;
+        durationSeconds: number | null;
         aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
         transcript: import("@prisma/client/runtime/client").JsonValue | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
-        durationSeconds: number | null;
+        participantsAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        actionItems: import("@prisma/client/runtime/client").JsonValue | null;
+        decisions: import("@prisma/client/runtime/client").JsonValue | null;
+        speakerInsights: import("@prisma/client/runtime/client").JsonValue | null;
+        conversationDynamics: import("@prisma/client/runtime/client").JsonValue | null;
+        nextMeetingPreparation: import("@prisma/client/runtime/client").JsonValue | null;
         status: string;
+        user_id: string;
         createdAt: Date;
         updatedAt: Date;
-        user_id: string;
         audioFileId: number | null;
     }>;
-    addParticipant(id: string, body: {
-        name: string;
-        role?: string;
+    addParticipant(req: any, id: string, body: {
+        participantId?: string;
+        name?: string;
         voiceSampleUrl?: string;
-    }): Promise<{
-        id: string;
-        createdAt: Date;
-        name: string;
-        role: string | null;
-        meetingId: string;
-        voiceSampleId: number | null;
-    }>;
+    }): Promise<any>;
+    removeParticipant(id: string, participantId: string): Promise<any>;
+    processAudio(req: any, id: string): Promise<any>;
     webhookResult(id: string, body: any): Promise<{
         id: string;
         title: string;
         description: string | null;
         date: Date;
+        durationSeconds: number | null;
         aiAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
         transcript: import("@prisma/client/runtime/client").JsonValue | null;
         metrics: import("@prisma/client/runtime/client").JsonValue | null;
-        durationSeconds: number | null;
+        participantsAnalysis: import("@prisma/client/runtime/client").JsonValue | null;
+        actionItems: import("@prisma/client/runtime/client").JsonValue | null;
+        decisions: import("@prisma/client/runtime/client").JsonValue | null;
+        speakerInsights: import("@prisma/client/runtime/client").JsonValue | null;
+        conversationDynamics: import("@prisma/client/runtime/client").JsonValue | null;
+        nextMeetingPreparation: import("@prisma/client/runtime/client").JsonValue | null;
         status: string;
+        user_id: string;
         createdAt: Date;
         updatedAt: Date;
-        user_id: string;
         audioFileId: number | null;
     }>;
 }

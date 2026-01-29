@@ -27,6 +27,9 @@ let MeetingsController = class MeetingsController {
     findAll(req) {
         return this.meetingsService.findAll(req.user.userId);
     }
+    findAllParticipants(req) {
+        return this.meetingsService.getMyParticipants(req.user.userId);
+    }
     findOne(req, id) {
         return this.meetingsService.findOne(id, req.user.userId);
     }
@@ -36,8 +39,14 @@ let MeetingsController = class MeetingsController {
     remove(req, id) {
         return this.meetingsService.softDelete(id, req.user.userId);
     }
-    async addParticipant(id, body) {
-        return this.meetingsService.addParticipant(id, body);
+    async addParticipant(req, id, body) {
+        return this.meetingsService.addParticipant(id, req.user.userId, body);
+    }
+    async removeParticipant(id, participantId) {
+        return this.meetingsService.removeParticipant(id, participantId);
+    }
+    async processAudio(req, id) {
+        return this.meetingsService.processAudio(id, req.user.userId);
     }
     async webhookResult(id, body) {
         console.log(`Recibiendo resultados para reunión ${id}`);
@@ -69,6 +78,14 @@ __decorate([
 ], MeetingsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('participants/all'),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], MeetingsController.prototype, "findAllParticipants", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
@@ -98,12 +115,31 @@ __decorate([
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)(':id/participants'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [Object, String, Object]),
     __metadata("design:returntype", Promise)
 ], MeetingsController.prototype, "addParticipant", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)(':id/participants/:participantId/delete'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('participantId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], MeetingsController.prototype, "removeParticipant", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)(':id/process'),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], MeetingsController.prototype, "processAudio", null);
 __decorate([
     (0, common_1.Post)('webhook-result/:id'),
     __param(0, (0, common_1.Param)('id')),
