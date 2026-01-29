@@ -74,6 +74,8 @@ export class MeetingsController {
     @Body() body: { audioUrl?: string },
     @UploadedFiles() files: Array<Express.Multer.File>
   ) {
+    console.log('[MeetingsController] Process request body:', body);
+    console.log('[MeetingsController] Process request files:', files?.map(f => ({ fieldname: f.fieldname, size: f.size })));
     return this.meetingsService.processAudio(id, req.user.userId, body?.audioUrl, files);
   }
 
