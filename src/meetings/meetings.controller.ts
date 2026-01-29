@@ -66,8 +66,12 @@ export class MeetingsController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/process')
-  async processAudio(@Request() req, @Param('id') id: string) {
-    return this.meetingsService.processAudio(id, req.user.userId);
+  async processAudio(
+    @Request() req, 
+    @Param('id') id: string,
+    @Body() body: { audioUrl?: string }
+  ) {
+    return this.meetingsService.processAudio(id, req.user.userId, body.audioUrl);
   }
 
   // Endpoint para el Webhook

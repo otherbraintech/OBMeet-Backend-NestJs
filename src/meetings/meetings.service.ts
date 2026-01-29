@@ -186,7 +186,7 @@ export class MeetingsService {
     });
   }
 
-  async processAudio(meetingId: string, userId: string) {
+  async processAudio(meetingId: string, userId: string, fallbackAudioUrl?: string) {
     console.log(`[ProcessAudio] Inicio para meetingId=${meetingId}, userId=${userId}`);
     
     try {
@@ -196,9 +196,18 @@ export class MeetingsService {
             throw new HttpException('Meeting not found', HttpStatus.NOT_FOUND);
         }
         
-        if (!meeting.audioFile) {
-            console.error(`[ProcessAudio] Sin archivo de audio vinculado`);
-            throw new HttpException('No audio file found for this meeting in DB', HttpStatus.BAD_REQUEST);
+        let audioUrl: string;
+        if (meeting.audioFile && meeting.audioFile.url) {
+             audioUrl = meeting.audioFile.url;
+        } else if (fallbackAudioUrl) {
+             console.log(`[ProcessAudio] Usando fallback URL proporcionada por cliente: ${fallbackAudioUrl}`);
+             audioUrl = fallbackAudioUrl;
+             
+             // Opcional: Auto-reparar la relación en BDD si es factible
+             // Pero por ahora confiamos en el fallback para procesar
+        } else {
+             console.error(`[ProcessAudio] Sin archivo de audio vinculado`);
+             throw new HttpException('No audio file found for this meeting in DB and no fallback provided.', HttpStatus.BAD_REQUEST);
         }
 
         const formData = new FormData();
@@ -208,7 +217,6 @@ export class MeetingsService {
         formData.append('audioDurationSeconds', String(meeting.durationSeconds || 0));
 
         // Handle Main Audio
-        const audioUrl = meeting.audioFile.url;
         console.log(`[ProcessAudio] Descargando audio principal de: ${audioUrl}`);
         
         try {
