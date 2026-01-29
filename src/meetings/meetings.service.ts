@@ -221,20 +221,8 @@ export class MeetingsService {
             });
         } catch (err) {
             console.error(`Failed to download voice sample for ${p.participant.name}`, err);
-            participantMetadata.push({
-                id: p.participant.id,
-                name: p.participant.name,
-                duration: 10,
-                fieldName: null
-            });
+            // If download fails, we do NOT include them in metadata to avoid Python errors
         }
-      } else {
-         participantMetadata.push({
-            id: p.participant.id,
-            name: p.participant.name,
-            duration: 10,
-            fieldName: null 
-        });
       }
     }
     formData.append('participants_metadata', JSON.stringify(participantMetadata));
