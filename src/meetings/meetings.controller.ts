@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { MeetingsService } from './meetings.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('meetings')
 export class MeetingsController {
@@ -66,12 +67,14 @@ export class MeetingsController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/process')
+  @UseInterceptors(AnyFilesInterceptor())
   async processAudio(
     @Request() req, 
     @Param('id') id: string,
-    @Body() body: { audioUrl?: string }
+    @Body() body: { audioUrl?: string },
+    @UploadedFiles() files: Array<Express.Multer.File>
   ) {
-    return this.meetingsService.processAudio(id, req.user.userId, body.audioUrl);
+    return this.meetingsService.processAudio(id, req.user.userId, body?.audioUrl, files);
   }
 
   // Endpoint para el Webhook
