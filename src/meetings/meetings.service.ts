@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
-import FormData = require('form-data');
+import FormData from 'form-data';
 
 @Injectable()
 export class MeetingsService {
@@ -200,8 +200,13 @@ export class MeetingsService {
     // Handle Main Audio
     const audioUrl = meeting.audioFile.url;
     console.log(`Downloading main audio from: ${audioUrl}`);
-    const audioStream = await axios.get(audioUrl, { responseType: 'stream' });
-    formData.append('audio_main', audioStream.data, 'meeting_audio.m4a');
+    try {
+        const audioStream = await axios.get(audioUrl, { responseType: 'stream' });
+        formData.append('audio_main', audioStream.data, 'meeting_audio.m4a');
+    } catch (error) {
+        console.error(`Failed to download main audio from ${audioUrl}`, error.message);
+        throw new Error(`Failed to download main audio: ${error.message}`);
+    }
 
     // Handle Participants
     const participantMetadata: any[] = [];
