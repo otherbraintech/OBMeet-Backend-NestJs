@@ -64,6 +64,12 @@ export class MeetingsController {
     return this.meetingsService.removeParticipant(id, participantId);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/process')
+  async processAudio(@Request() req, @Param('id') id: string) {
+    return this.meetingsService.processAudio(id, req.user.userId);
+  }
+
   // Endpoint para el Webhook
   @Post('webhook-result/:id')
   async webhookResult(@Param('id') id: string, @Body() body: any) {

@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import axios from 'axios';
+import FormData = require('form-data');
 
 @Injectable()
 export class MeetingsService {
@@ -182,5 +184,83 @@ export class MeetingsService {
         status: 'COMPLETED',
       },
     });
+  }
+
+  async processAudio(meetingId: string, userId: string) {
+    const meeting = await this.findOne(meetingId, userId);
+    if (!meeting) throw new Error('Meeting not found');
+    if (!meeting.audioFile) throw new Error('No audio file found for this meeting');
+
+    const formData = new FormData();
+    formData.append('meetingId', meeting.id);
+    formData.append('userId', userId);
+    formData.append('meetingTitle', meeting.title);
+    formData.append('audioDurationSeconds', String(meeting.durationSeconds || 0));
+
+    // Handle Main Audio
+    const audioUrl = meeting.audioFile.url;
+    console.log(`Downloading main audio from: ${audioUrl}`);
+    const audioStream = await axios.get(audioUrl, { responseType: 'stream' });
+    formData.append('audio_main', audioStream.data, 'meeting_audio.m4a');
+
+    // Handle Participants
+    const participantMetadata: any[] = [];
+    for (const p of meeting.participants) {
+      if (p.participant.voiceSample && p.participant.voiceSample.url) {
+        try {
+            console.log(`Downloading voice sample for ${p.participant.name} from: ${p.participant.voiceSample.url}`);
+            const pStream = await axios.get(p.participant.voiceSample.url, { responseType: 'stream' });
+            const fieldName = `participant_audio_${p.participant.id}`;
+            formData.append(fieldName, pStream.data, 'voice_sample.m4a');
+            
+            participantMetadata.push({
+                id: p.participant.id,
+                name: p.participant.name,
+                duration: 10, 
+                fieldName: fieldName
+            });
+        } catch (err) {
+            console.error(`Failed to download voice sample for ${p.participant.name}`, err);
+            participantMetadata.push({
+                id: p.participant.id,
+                name: p.participant.name,
+                duration: 10,
+                fieldName: null
+            });
+        }
+      } else {
+         participantMetadata.push({
+            id: p.participant.id,
+            name: p.participant.name,
+            duration: 10,
+            fieldName: null 
+        });
+      }
+    }
+    formData.append('participants_metadata', JSON.stringify(participantMetadata));
+
+    console.log(`Envio a Python Backend...`);
+    // Use env var or default
+    const pythonUrl = process.env.PYTHON_PROCESS_URL || 'https://intelexia-labs-ob-meet-phyton.af9gwe.easypanel.host/meetings/process';
+    
+    try {
+        const response = await axios.post(pythonUrl, formData, {
+            headers: formData.getHeaders(),
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
+        });
+        
+        // Update status to processing
+        await this.update(meetingId, userId, { status: 'processing' });
+        
+        return response.data;
+    } catch (error) {
+        console.error('Error sending to Python backend:', error.message);
+        if (error.response) {
+            console.error('Python response data:', error.response.data);
+            throw new Error(`Python Backend Error: ${JSON.stringify(error.response.data)}`);
+        }
+        throw error;
+    }
   }
 }
