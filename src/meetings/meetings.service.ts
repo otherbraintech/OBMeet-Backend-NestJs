@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
 import FormData from 'form-data';
@@ -187,73 +187,110 @@ export class MeetingsService {
   }
 
   async processAudio(meetingId: string, userId: string) {
-    const meeting = await this.findOne(meetingId, userId);
-    if (!meeting) throw new Error('Meeting not found');
-    if (!meeting.audioFile) throw new Error('No audio file found for this meeting');
-
-    const formData = new FormData();
-    formData.append('meetingId', meeting.id);
-    formData.append('userId', userId);
-    formData.append('meetingTitle', meeting.title);
-    formData.append('audioDurationSeconds', String(meeting.durationSeconds || 0));
-
-    // Handle Main Audio
-    const audioUrl = meeting.audioFile.url;
-    console.log(`Downloading main audio from: ${audioUrl}`);
-    try {
-        const audioStream = await axios.get(audioUrl, { responseType: 'stream' });
-        formData.append('audio_main', audioStream.data, 'meeting_audio.m4a');
-    } catch (error) {
-        console.error(`Failed to download main audio from ${audioUrl}`, error.message);
-        throw new Error(`Failed to download main audio: ${error.message}`);
-    }
-
-    // Handle Participants
-    const participantMetadata: any[] = [];
-    for (const p of meeting.participants) {
-      if (p.participant.voiceSample && p.participant.voiceSample.url) {
-        try {
-            console.log(`Downloading voice sample for ${p.participant.name} from: ${p.participant.voiceSample.url}`);
-            const pStream = await axios.get(p.participant.voiceSample.url, { responseType: 'stream' });
-            const fieldName = `participant_audio_${p.participant.id}`;
-            formData.append(fieldName, pStream.data, 'voice_sample.m4a');
-            
-            participantMetadata.push({
-                id: p.participant.id,
-                name: p.participant.name,
-                duration: 10, 
-                fieldName: fieldName
-            });
-        } catch (err) {
-            console.error(`Failed to download voice sample for ${p.participant.name}`, err);
-            // If download fails, we do NOT include them in metadata to avoid Python errors
-        }
-      }
-    }
-    formData.append('participants_metadata', JSON.stringify(participantMetadata));
-
-    console.log(`Envio a Python Backend...`);
-    // Use env var or default
-    const pythonUrl = process.env.PYTHON_PROCESS_URL || 'https://intelexia-labs-ob-meet-phyton.af9gwe.easypanel.host/meetings/process';
+    console.log(`[ProcessAudio] Inicio para meetingId=${meetingId}, userId=${userId}`);
     
     try {
+        const meeting = await this.findOne(meetingId, userId);
+        if (!meeting) {
+            console.error(`[ProcessAudio] Reunion no encontrada`);
+            throw new HttpException('Meeting not found', HttpStatus.NOT_FOUND);
+        }
+        
+        if (!meeting.audioFile) {
+            console.error(`[ProcessAudio] Sin archivo de audio vinculado`);
+            throw new HttpException('No audio file found for this meeting in DB', HttpStatus.BAD_REQUEST);
+        }
+
+        const formData = new FormData();
+        formData.append('meetingId', meeting.id);
+        formData.append('userId', userId);
+        formData.append('meetingTitle', meeting.title);
+        formData.append('audioDurationSeconds', String(meeting.durationSeconds || 0));
+
+        // Handle Main Audio
+        const audioUrl = meeting.audioFile.url;
+        console.log(`[ProcessAudio] Descargando audio principal de: ${audioUrl}`);
+        
+        try {
+            const audioStream = await axios.get(audioUrl, { responseType: 'stream' });
+            // Necesario para que form-data reconozca el stream correctamente si no es fs.createReadStream
+            formData.append('audio_main', audioStream.data, {
+                filename: 'meeting_audio.m4a',
+                contentType: 'audio/m4a'
+            });
+        } catch (error) {
+            console.error(`[ProcessAudio] Error descargando audio principal:`, error.message);
+            throw new HttpException(`Failed to download main audio from ${audioUrl}: ${error.message}`, HttpStatus.BAD_GATEWAY);
+        }
+
+        // Handle Participants
+        const participantMetadata: any[] = [];
+        for (const p of meeting.participants) {
+            if (p.participant.voiceSample && p.participant.voiceSample.url) {
+                try {
+                    console.log(`[ProcessAudio] Descargando muestra de voz para ${p.participant.name}`);
+                    const pStream = await axios.get(p.participant.voiceSample.url, { responseType: 'stream' });
+                    const fieldName = `participant_audio_${p.participant.id}`;
+                    
+                    formData.append(fieldName, pStream.data, {
+                         filename: 'voice_sample.m4a',
+                         contentType: 'audio/m4a'
+                    });
+                    
+                    participantMetadata.push({
+                        id: p.participant.id,
+                        name: p.participant.name,
+                        duration: 10, 
+                        fieldName: fieldName
+                    });
+                } catch (err) {
+                    console.error(`[ProcessAudio] Fallo descarga voz participante ${p.participant.name}`, err.message);
+                    // Continuamos sin este audio, no es crítico para detener todo el proceso
+                }
+            }
+        }
+        
+        formData.append('participants_metadata', JSON.stringify(participantMetadata));
+
+        console.log(`[ProcessAudio] Payload preparado. Enviando a Python Backend...`);
+        // Use env var or default
+        const pythonUrl = process.env.PYTHON_PROCESS_URL || 'https://intelexia-labs-ob-meet-phyton.af9gwe.easypanel.host/meetings/process';
+        console.log(`[ProcessAudio] Target URL: ${pythonUrl}`);
+        
         const response = await axios.post(pythonUrl, formData, {
-            headers: formData.getHeaders(),
+            headers: {
+                ...formData.getHeaders(),
+                // Importante: A veces el content-length calculado automáticamente falla con streams de red
+                // Dejamos que axios/form-data lo manejen en modo 'chunked' si es necesario
+            },
             maxContentLength: Infinity,
             maxBodyLength: Infinity
         });
         
+        console.log(`[ProcessAudio] Respuesta exitosa de Python:`, response.data);
+
         // Update status to processing
         await this.update(meetingId, userId, { status: 'processing' });
         
         return response.data;
+
     } catch (error) {
-        console.error('Error sending to Python backend:', error.message);
-        if (error.response) {
-            console.error('Python response data:', error.response.data);
-            throw new Error(`Python Backend Error: ${JSON.stringify(error.response.data)}`);
+        console.error('[ProcessAudio] Error General:', error);
+        
+        // Si ya es HttpException, relanzar
+        if (error instanceof HttpException) {
+            throw error;
         }
-        throw error;
+
+        // Si es error de Axios contra Python
+        if (error.response) {
+            console.error('[ProcessAudio] Python Response Error:', error.response.data);
+            const detail = JSON.stringify(error.response.data);
+            throw new HttpException(`Python Backend Error: ${detail}`, HttpStatus.BAD_GATEWAY);
+        }
+        
+        // Error genérico
+        throw new HttpException(`Internal Processing Error: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }
